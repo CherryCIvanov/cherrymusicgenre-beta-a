@@ -815,7 +815,7 @@ function patToggle(pid,pat,btn,mode){
   patStop();
   var p=pat.split('|'),bpm=+p[0]||120,rows=[p[1],p[2],p[3]];
   patPlayingId=btn.id;patStep=0;
-  bgmDuck(true);
+  bgmHold();
   patMask=mode==='all'?[0,1,2]:[+mode];
   patBarEl=document.getElementById('pat-bar-'+pid);
   patCells=patBarEl?patBarEl.ownerSVGElement.querySelectorAll('.pat-cell'):[];
@@ -835,7 +835,7 @@ function patToggle(pid,pat,btn,mode){
   patTimer=setInterval(function(){while(next<ctx.currentTime+0.15){step();}},30);
 }
 function patStop(){
-  bgmDuck(false);
+  bgmResume();
   if(patTimer){clearInterval(patTimer);patTimer=null;}
   for(var kk in patBtnEls){var b=patBtnEls[kk];if(b){var lab=b.getAttribute('data-label');if(lab)b.textContent=lab;}}
   if(patBarEl){patBarEl.setAttribute('opacity','0');patBarEl=null;}
@@ -971,7 +971,7 @@ function toneSpectrumHTML(pid){
 function tonePlay(pid,engName,btn){
   if(tonePlayingId===pid){toneStop();return;}
   patStop();toneStop();
-  stopSong();bgmDuck(true);
+  stopSong();bgmHold();
   if(audioCtx){try{audioCtx.close();}catch(e){}audioCtx=null;}
   var ctx=toneAudio();if(!ctx)return;
   if(ctx.state==='suspended'&&ctx.resume)ctx.resume();
@@ -1004,7 +1004,7 @@ function tonePlay(pid,engName,btn){
   schedule();
 }
 function toneStop(){
-  bgmDuck(false);
+  bgmResume();
   if(toneSrc){try{toneSrc.disconnect();}catch(e){}toneSrc=null;}
   if(toneRaf){cancelAnimationFrame(toneRaf);toneRaf=null;}
   for(var i=0;i<toneNoteTimers.length;i++)clearTimeout(toneNoteTimers[i]);
@@ -1181,12 +1181,14 @@ var bgmTracks=['C418 - 方块谧境.mp3','C418 - 暴风前夕.mp3'],bgmIdx=0;
 var SONGS={'post-punk':'Перемотка - Красива.mp3'};
 var songEl=document.getElementById('song');
 function startBGM(){if(bgmStarted||!bgmEl)return;bgmStarted=true;bgmEl.src=bgmTracks[0];bgmEl.volume=0.35;bgmEl.play().catch(function(){});}
-function bgmDuck(d){if(bgmEl)bgmEl.volume=d?0.1:0.35;}
-function playSong(f){if(!songEl)return;if(songEl.getAttribute('src')===f&&!songEl.paused)return;bgmWasPlaying=bgmStarted&&bgmEl&&!bgmEl.paused;if(bgmEl&&!bgmEl.paused)bgmEl.pause();songEl.src=f;songEl.volume=0.6;songEl.play().catch(function(){});}
-function stopSong(){if(!songEl)return;if(!songEl.paused)songEl.pause();songEl.removeAttribute('src');songEl.load();if(bgmWasPlaying&&!bgmUserOff&&bgmStarted&&bgmEl&&bgmEl.paused){bgmEl.play().catch(function(){});}bgmWasPlaying=false;}
+function bgmHold(){if(!bgmEl)return;bgmWasPlaying=bgmStarted&&!bgmEl.paused;if(!bgmEl.paused)bgmEl.pause();}
+function bgmResume(){if(bgmWasPlaying&&!bgmUserOff&&bgmStarted&&bgmEl&&bgmEl.paused){bgmEl.play().catch(function(){});}bgmWasPlaying=false;}
+function playSong(f){if(!songEl)return;if(songEl.getAttribute('src')===f&&!songEl.paused)return;bgmHold();if(songEl.getAttribute('src')!==f)songEl.src=f;songEl.volume=0.6;songEl.play().catch(function(){});}
+function stopSong(){if(!songEl)return;if(!songEl.paused)songEl.pause();songEl.removeAttribute('src');songEl.load();bgmResume();}
 document.addEventListener('pointerdown',startBGM,{passive:true});
 if(bgmEl)bgmEl.addEventListener('ended',function(){bgmIdx=(bgmIdx+1)%bgmTracks.length;bgmEl.src=bgmTracks[bgmIdx];bgmEl.play().catch(function(){});});
 if(songEl)songEl.addEventListener('ended',stopSong);
+window.addEventListener('load',function(){if(songEl){songEl.preload='auto';songEl.src=SONGS['post-punk'];}});
 if(bgmBtn)bgmBtn.addEventListener('click',function(){if(!bgmEl)return;if(bgmEl.paused){bgmEl.play().catch(function(){});bgmUserOff=false;bgmBtn.textContent='🎵';bgmBtn.title='暂停背景音乐';}else{bgmEl.pause();bgmUserOff=true;bgmBtn.textContent='🔇';bgmBtn.title='播放背景音乐';}});
 
 // ── Onboarding ──
